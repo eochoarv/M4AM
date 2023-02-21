@@ -16,8 +16,8 @@ warnings.filterwarnings("ignore")
 def interpol_spect(df_spectr, min_wl=0, max_wl=3500, n=1400, id_spetr='file_name'):
     
     spectr_list = df_spectr[id_spetr].drop_duplicates()
-    df_spectr_min = df_spectr.groupby('file_name').min()
-    df_spectr_max = df_spectr.groupby('file_name').max()
+    df_spectr_min = df_spectr.groupby(id_spetr).min()
+    df_spectr_max = df_spectr.groupby(id_spetr).max()
     all_wl = np.linspace(min_wl, max_wl, num=n, endpoint=True)
 
     df_spectr_inter = pd.DataFrame()
@@ -41,8 +41,8 @@ def interpol_spect(df_spectr, min_wl=0, max_wl=3500, n=1400, id_spetr='file_name
         df_spectr_inter = pd.concat([df_spectr_inter, 
                                   pd.DataFrame({'wavelength':np.concatenate([x_new, x_out]), 
                                                 'intensity':np.concatenate([f(x_new), np.zeros(len(x_out))]) , 
-                                                'polymer':[polymer_fn] * 1400 , 
-                                                'file_name':[fn] * 1400 }).sort_values('wavelength')])
+                                                'polymer':[polymer_fn] * n , 
+                                                id_spetr:[fn] * n }).sort_values('wavelength')])
         
     return df_spectr_inter.reset_index(drop=True)
 
@@ -52,11 +52,19 @@ def norm_spect(df_spectr, norm_type='MINMAX', id_spetr='file_name'):
     
     spectr_list = df_spectr[id_spetr].drop_duplicates()
     
-    df_spectr_min = df_spectr.groupby('file_name').min()
-    df_spectr_max = df_spectr.groupby('file_name').max()
+    poly_list = df_spectr['polymer'].drop_duplicates().to_numpy()
     
-    df_spectr_mean = df_spectr.groupby('file_name').mean()
-    df_spectr_sd = df_spectr.groupby('file_name').std()
+    df_spectr_min = df_spectr.groupby(id_spetr).min()
+    df_spectr_max = df_spectr.groupby(id_spetr).max()
+    
+    df_spectr_mean = df_spectr.groupby(id_spetr).mean()
+    df_spectr_sd = df_spectr.groupby(id_spetr).std()
+    
+    df_spectr_min_p = df_spectr.groupby(['polymer', 'wavelength']).min().reset_index()
+    df_spectr_max_p = df_spectr.groupby(['polymer', 'wavelength']).max().reset_index()
+    
+    df_spectr_mean_p = df_spectr.groupby(['polymer', 'wavelength']).mean().reset_index()
+    df_spectr_sd_p = df_spectr.groupby(['polymer', 'wavelength']).std().reset_index()
     
     df_spectr_norm = pd.DataFrame()
     
@@ -68,7 +76,8 @@ def norm_spect(df_spectr, norm_type='MINMAX', id_spetr='file_name'):
             min_norm = df_spectr_min.loc[fn, 'intensity']
             max_norm = df_spectr_max.loc[fn, 'intensity']
             
-            df_spectr_fn.loc[:,'intensity'] = (df_spectr_fn['intensity'] - min_norm) / (max_norm - min_norm)
+            df_spectr_fn.loc[:,'intensity'] = (df_spectr_fn['intensity'] - 
+                                               min_norm) / (max_norm - min_norm)
             
             df_spectr_norm = pd.concat([df_spectr_norm, 
                                          df_spectr_fn])
@@ -81,10 +90,60 @@ def norm_spect(df_spectr, norm_type='MINMAX', id_spetr='file_name'):
             mean_norm = df_spectr_mean.loc[fn, 'intensity']
             sd_norm = df_spectr_sd.loc[fn, 'intensity']
             
-            df_spectr_fn.loc[:,'intensity'] = (df_spectr_fn['intensity'] - mean_norm) / sd_norm
+            df_spectr_fn.loc[:,'intensity'] = (df_spectr_fn['intensity'] - 
+                                               mean_norm) / sd_norm
             
             df_spectr_norm = pd.concat([df_spectr_norm, 
                                          df_spectr_fn])
+            
+        return df_spectr_norm.reset_index(drop=True)
+    
+    
+    #if norm_type == 'MINMAX2':
+
+     #   for p in poly_list:
+     #       df_spectr_p = df_spectr.query('polymer == @p').reset_index(drop=True) 
+     #       min_norm = df_spectr_min.loc[fn, 'intensity']
+     #       max_norm = df_spectr_max.loc[fn, 'intensity']
+            
+     #       min_norm = (df_spectr_min_p.
+     #                   query('polymer == @p').
+     #                   loc[:, ['wavelength', 'intensity']].
+     #                   rename(columns={'intensity':'min_intensity'}))
+     #       max_norm = (df_spectr_max_p.
+     #                   query('polymer == @p').
+     #                   loc[:, ['wavelength', 'intensity']].
+     #                   rename(columns={'intensity':'max_intensity'}))
+            
+     #       df_spectr_fn.loc[:,'intensity'] = (df_spectr_fn['intensity'] - 
+     #                                          min_norm) / (max_norm - min_norm)
+            
+     #       df_spectr_norm = pd.concat([df_spectr_norm, 
+     #                                    df_spectr_fn])
+     #   return df_spectr_norm
+    
+    if norm_type == 'SNV2':
+    
+        for p in poly_list:
+            df_spectr_p = df_spectr.query('polymer == @p').reset_index(drop=True) 
+            mean_norm = (df_spectr_mean_p.
+                         query('polymer == @p').
+                         loc[:, ['wavelength', 'intensity']].
+                         rename(columns={'intensity':'mean_intensity'}))
+            sd_norm = (df_spectr_sd_p.
+                       query('polymer == @p').
+                       loc[:, ['wavelength', 'intensity']].
+                       rename(columns={'intensity':'sd_intensity'}))
+            df_spectr_p = (df_spectr_p.
+                           merge(mean_norm, on='wavelength').
+                           merge(sd_norm, on='wavelength'))
+            df_spectr_p.loc[:,'intensity'] = (df_spectr_p['intensity'] - 
+                                              df_spectr_p['mean_intensity']) / df_spectr_p['sd_intensity']
+            df_spectr_p = df_spectr_p.drop(columns=['mean_intensity', 'sd_intensity'])
+            #df_spectr_p.loc[:,'intensity'] = (df_spectr_fn['intensity'] - mean_norm) / sd_norm
+            
+            df_spectr_norm = pd.concat([df_spectr_norm, 
+                                         df_spectr_p])
             
         return df_spectr_norm.reset_index(drop=True)
     
