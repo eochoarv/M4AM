@@ -26,6 +26,7 @@
 *.sql
 *.sqlite
 *.csv
+*.pdf
 
 # OS generated files #
 ######################
@@ -36,3 +37,5 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+216_2018_1156_MOESM4_ESM/
