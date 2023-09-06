@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<annotations>
+  <version>1.1</version>
+  <meta>
+    <job>
+      <id>4</id>
+      <size>1</size>
+      <mode>annotation</mode>
+      <overlap>0</overlap>
+      <bugtracker></bugtracker>
+      <created>2023-05-08 20:22:47.211387+00:00</created>
+      <updated>2023-05-08 20:44:04.822285+00:00</updated>
+      <subset>Test</subset>
+      <start_frame>0</start_frame>
+      <stop_frame>0</stop_frame>
+      <frame_filter></frame_filter>
+      <segments>
+        <segment>
+          <id>4</id>
+          <start>0</start>
+          <stop>0</stop>
+          <url>http://localhost:8080/api/jobs/4</url>
+        </segment>
+      </segments>
+      <owner>
+        <username>eochoa</username>
+        <email>eochoa@umich.edu</email>
+      </owner>
+      <assignee></assignee>
+      <labels>
+        <label>
+          <name>particle</name>
+          <color>#5c5495</color>
+          <type>any</type>
+          <attributes>
+          </attributes>
+        </label>
+      </labels>
+    </job>
+    <dumped>2023-05-08 20:45:32.261123+00:00</dumped>
+  </meta>
+  <image id="0" name="MEC_02_038_OPTIR_quartz_3.jpg" width="812" height="608">
+    <mask label="particle" source="manual" occluded="0" rle="6, 8, 9, 10, 7, 12, 5, 14, 3, 16, 1, 34, 1, 17, 1, 17, 1, 17, 1, 17, 1, 16, 2, 15, 3, 13, 7, 10, 9, 7, 13, 3, 10" left="346" top="346" width="18" height="17" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="11, 11, 26, 18, 20, 20, 17, 24, 14, 26, 11, 30, 9, 31, 8, 32, 6, 34, 5, 35, 4, 35, 4, 35, 3, 37, 2, 37, 2, 37, 2, 38, 1, 116, 1, 38, 1, 38, 2, 37, 2, 36, 4, 35, 5, 34, 5, 34, 6, 33, 6, 33, 7, 32, 8, 31, 8, 31, 9, 30, 10, 28, 11, 27, 13, 24, 16, 22, 20, 18, 26, 12, 32, 6, 9" left="344" top="163" width="39" height="39" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="9, 3, 21, 5, 18, 8, 15, 11, 12, 14, 9, 17, 6, 19, 4, 20, 3, 21, 3, 21, 3, 21, 2, 22, 2, 22, 2, 22, 2, 22, 2, 22, 1, 23, 1, 23, 1, 71, 1, 23, 2, 21, 3, 20, 4, 20, 5, 18, 6, 18, 7, 16, 8, 15, 14, 10, 19, 4, 7" left="387" top="13" width="24" height="31" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="11, 2, 25, 6, 20, 10, 16, 15, 11, 19, 8, 20, 8, 21, 6, 22, 6, 23, 5, 23, 4, 25, 3, 26, 2, 26, 1, 139, 1, 26, 3, 25, 3, 24, 4, 23, 6, 22, 6, 21, 7, 21, 8, 19, 9, 18, 11, 17, 14, 13, 19, 8, 24, 4, 9" left="428" top="230" width="28" height="31" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="0, 4, 1, 15, 1, 3, 1" left="203" top="554" width="5" height="5" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="29, 2, 34, 8, 27, 14, 21, 20, 16, 25, 13, 28, 11, 30, 9, 32, 7, 34, 4, 35, 4, 36, 3, 37, 2, 38, 1, 39, 1, 39, 1, 38, 2, 37, 3, 36, 4, 35, 5, 34, 6, 34, 6, 33, 7, 32, 8, 31, 9, 30, 10, 29, 13, 26, 15, 22, 20, 18, 23, 14, 28, 10, 31, 6, 36, 2, 27" left="428" top="408" width="40" height="33" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="18, 3, 24, 9, 21, 12, 19, 14, 16, 17, 13, 19, 11, 20, 11, 21, 9, 22, 8, 23, 7, 24, 6, 25, 5, 26, 4, 27, 4, 27, 3, 28, 3, 28, 3, 28, 2, 29, 2, 29, 2, 29, 1, 30, 1, 29, 2, 29, 2, 29, 1, 29, 3, 28, 3, 27, 5, 25, 6, 24, 8, 21, 11, 19, 12, 17, 15, 15, 18, 11, 23, 7, 27, 2, 16" left="298" top="227" width="31" height="37" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="6, 4, 4, 7, 2, 9, 2, 9, 2, 10, 1, 10, 1, 32, 1, 10, 2, 8, 3, 8, 5, 6, 7, 4, 9, 1, 2" left="357" top="231" width="11" height="15" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="13, 1, 18, 8, 16, 10, 14, 11, 13, 13, 11, 15, 9, 17, 7, 18, 6, 20, 5, 21, 5, 22, 3, 23, 2, 24, 2, 23, 2, 22, 4, 21, 4, 20, 5, 19, 8, 17, 9, 15, 12, 12, 14, 11, 16, 3, 11" left="409" top="156" width="25" height="23" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="12, 2, 11, 9, 8, 12, 6, 14, 5, 15, 3, 16, 3, 16, 2, 17, 2, 17, 1, 18, 1, 56, 1, 18, 1, 18, 1, 17, 3, 16, 4, 14, 6, 12, 10, 8, 17, 1, 6" left="365" top="428" width="19" height="21" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="3, 3, 5, 6, 4, 7, 3, 8, 2, 28, 1, 8, 2, 7, 4, 5, 7, 2, 5" left="208" top="336" width="10" height="11" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="0, 9" left="83" top="383" width="3" height="3" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="19, 1, 17, 9, 15, 12, 12, 15, 10, 17, 8, 18, 7, 20, 5, 22, 3, 23, 2, 25, 1, 24, 1, 25, 2, 23, 3, 23, 3, 23, 4, 21, 5, 21, 5, 20, 8, 16, 15, 9, 21, 3, 10" left="286" top="190" width="26" height="21" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="9, 12, 24, 14, 22, 16, 20, 18, 18, 20, 16, 22, 15, 23, 14, 24, 12, 26, 11, 26, 11, 27, 10, 28, 9, 28, 8, 30, 7, 30, 7, 31, 6, 31, 6, 32, 5, 33, 3, 34, 3, 34, 3, 35, 2, 35, 2, 109, 1, 35, 2, 34, 4, 33, 5, 31, 7, 29, 10, 26, 12, 25, 14, 22, 16, 21, 18, 18, 20, 17, 22, 13, 26, 5, 16" left="516" top="298" width="37" height="39" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="11, 13, 16, 16, 14, 19, 11, 21, 10, 22, 8, 23, 8, 23, 7, 24, 7, 24, 6, 25, 6, 26, 4, 27, 3, 28, 3, 28, 2, 29, 1, 30, 1, 93, 1, 30, 1, 30, 2, 29, 2, 29, 2, 29, 3, 28, 3, 28, 4, 26, 5, 26, 6, 25, 6, 24, 8, 21, 11, 18, 14, 16, 16, 13, 19, 10, 11" left="455" top="300" width="31" height="35" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="30, 3, 37, 6, 33, 11, 30, 13, 28, 15, 26, 18, 24, 19, 22, 20, 20, 22, 18, 24, 16, 26, 13, 30, 10, 32, 8, 34, 5, 37, 5, 37, 5, 37, 4, 38, 4, 38, 3, 39, 3, 38, 3, 39, 3, 39, 3, 38, 3, 39, 3, 39, 3, 39, 3, 38, 4, 38, 4, 38, 4, 37, 5, 37, 5, 37, 5, 36, 5, 36, 6, 35, 7, 34, 8, 32, 10, 31, 11, 30, 12, 29, 14, 26, 17, 24, 19, 22, 20, 20, 23, 18, 25, 16, 27, 14, 29, 9, 34, 2, 32" left="242" top="214" width="42" height="50" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="8, 1, 10, 7, 4, 12, 4, 13, 2, 14, 2, 13, 2, 13, 2, 13, 3, 12, 3, 11, 5, 10, 5, 9, 7, 7, 8, 6, 4" left="442" top="449" width="15" height="14" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="6, 9, 10, 11, 7, 13, 6, 15, 4, 17, 3, 18, 1, 59, 1, 18, 3, 16, 4, 16, 4, 15, 6, 13, 7, 12, 8, 12, 14, 5, 7" left="231" top="313" width="20" height="17" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="17, 3, 34, 9, 27, 17, 19, 23, 14, 25, 13, 27, 12, 28, 10, 30, 9, 31, 7, 33, 6, 34, 5, 34, 4, 36, 3, 36, 2, 37, 2, 37, 2, 37, 2, 37, 1, 38, 1, 37, 2, 37, 2, 37, 2, 37, 1, 38, 2, 37, 2, 36, 3, 36, 3, 35, 5, 33, 6, 33, 6, 32, 7, 31, 8, 30, 10, 28, 11, 28, 11, 27, 14, 24, 16, 22, 18, 20, 20, 17, 24, 13, 27, 11, 29, 8, 32, 5, 36, 2, 22" left="363" top="354" width="39" height="45" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="8, 1, 13, 5, 9, 8, 6, 12, 2, 15, 1, 48, 1, 15, 1, 15, 1, 15, 1, 15, 1, 15, 3, 13, 4, 11, 7, 7, 10, 3, 6" left="325" top="326" width="16" height="17" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="0, 4, 2, 18, 1, 5, 1, 5, 2, 4" left="503" top="218" width="6" height="7" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="6, 3, 9, 7, 5, 10, 2, 42, 1, 13, 1, 13, 1, 13, 1, 13, 1, 13, 1, 13, 1, 3, 10" left="405" top="533" width="14" height="13" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="5, 2, 4, 8, 3, 10, 1, 66, 1, 10, 2, 8, 4, 6, 7, 1, 5" left="358" top="274" width="11" height="13" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="13, 2, 19, 6, 14, 12, 11, 14, 9, 17, 6, 19, 5, 19, 4, 20, 3, 21, 2, 23, 1, 23, 1, 23, 2, 22, 2, 22, 2, 23, 1, 22, 2, 21, 4, 19, 5, 18, 6, 17, 7, 16, 8, 16, 9, 14, 14, 9, 8" left="380" top="241" width="24" height="24" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="1, 13, 1, 6, 1, 6, 1, 6, 3, 2, 2" left="538" top="288" width="7" height="6" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="9, 2, 13, 3, 11, 6, 9, 8, 6, 11, 4, 13, 1, 47, 1, 15, 1, 14, 2, 14, 2, 13, 3, 13, 3, 12, 4, 12, 4" left="424" top="497" width="16" height="16" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="7, 1, 12, 6, 8, 9, 4, 11, 3, 13, 1, 14, 2, 13, 2, 14, 1, 14, 1, 14, 1, 12, 3, 11, 5, 8, 5" left="60" top="381" width="15" height="13" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="3, 7, 4, 10, 1, 47, 1, 11, 1, 11, 2, 9, 3, 9, 9, 3, 1" left="431" top="301" width="12" height="11" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="18, 2, 31, 8, 25, 14, 19, 20, 12, 26, 7, 28, 5, 29, 4, 31, 2, 33, 2, 32, 3, 32, 3, 31, 4, 31, 3, 32, 3, 31, 4, 31, 4, 30, 5, 30, 5, 30, 5, 29, 7, 28, 8, 26, 11, 24, 12, 23, 14, 20, 17, 10, 16" left="402" top="199" width="35" height="26" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="3, 4, 8, 8, 4, 10, 3, 10, 2, 12, 1, 12, 1, 26, 1, 12, 1, 12, 2, 10, 4, 9, 5, 8, 10, 2, 2" left="461" top="194" width="13" height="14" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="13, 3, 27, 9, 22, 13, 17, 19, 13, 21, 12, 23, 9, 25, 7, 27, 6, 28, 4, 30, 3, 31, 1, 66, 1, 32, 1, 32, 1, 32, 2, 31, 2, 31, 2, 31, 3, 30, 3, 30, 3, 29, 5, 28, 5, 28, 6, 26, 7, 26, 8, 24, 10, 23, 10, 22, 13, 20, 15, 17, 18, 14, 20, 10, 25, 5, 12" left="489" top="260" width="33" height="34" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="3, 5, 8, 10, 6, 11, 5, 13, 3, 13, 3, 14, 2, 14, 2, 15, 1, 15, 1, 16, 1, 15, 2, 13, 4, 11, 6, 9, 9, 6, 12, 2, 6" left="477" top="238" width="16" height="16" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="3, 7, 5, 9, 3, 11, 1, 12, 1, 12, 1, 12, 2, 12, 1, 12, 1, 10, 4, 7, 9, 3, 5" left="465" top="388" width="13" height="11" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="12, 2, 23, 6, 19, 9, 17, 10, 15, 12, 13, 14, 12, 15, 9, 18, 5, 21, 3, 24, 1, 26, 1, 25, 1, 24, 2, 24, 2, 24, 2, 23, 3, 23, 4, 21, 5, 21, 5, 21, 5, 20, 7, 18, 9, 14, 14, 8, 19, 4, 15" left="449" top="213" width="26" height="25" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="3, 7, 6, 9, 5, 10, 3, 12, 2, 27, 1, 11, 4, 9, 7, 5, 10, 3, 6" left="485" top="410" width="14" height="10" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="6, 6, 13, 12, 10, 13, 8, 14, 7, 16, 6, 16, 6, 17, 5, 18, 3, 19, 3, 20, 2, 21, 1, 21, 1, 66, 1, 20, 4, 18, 5, 17, 6, 15, 9, 1, 14" left="295" top="285" width="22" height="20" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="3, 4, 4, 8, 3, 9, 3, 9, 2, 10, 2, 9, 2, 9, 3, 8, 4, 6, 1" left="661" top="464" width="11" height="9" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="13, 5, 15, 11, 11, 14, 10, 16, 8, 18, 5, 20, 4, 22, 3, 23, 2, 23, 2, 24, 1, 74, 1, 24, 1, 24, 1, 23, 2, 23, 2, 23, 2, 22, 3, 22, 4, 21, 4, 20, 5, 20, 5, 20, 5, 19, 14, 11, 24, 1, 5" left="366" top="561" width="25" height="27" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="6, 1, 13, 8, 7, 11, 6, 12, 5, 13, 4, 14, 2, 15, 2, 16, 1, 17, 1, 16, 1, 16, 2, 15, 2, 15, 3, 14, 4, 13, 5, 10, 9, 7, 12, 3, 5" left="661" top="76" width="17" height="18" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="15, 3, 19, 7, 15, 11, 11, 15, 9, 17, 7, 18, 7, 19, 5, 21, 4, 21, 3, 22, 2, 23, 2, 23, 1, 24, 2, 24, 1, 24, 1, 24, 2, 22, 3, 21, 4, 20, 5, 19, 8, 15, 13, 11, 16, 8, 20, 4, 9" left="403" top="263" width="25" height="24" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="17, 3, 31, 9, 25, 13, 21, 17, 18, 19, 16, 22, 13, 24, 11, 26, 9, 28, 6, 30, 5, 32, 4, 32, 3, 34, 1, 71, 1, 35, 1, 35, 1, 35, 2, 34, 2, 34, 2, 33, 4, 32, 4, 31, 6, 29, 7, 28, 9, 26, 10, 26, 11, 24, 13, 22, 14, 21, 17, 17, 22, 12, 26, 7, 31, 2, 18" left="490" top="362" width="36" height="34" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="8, 3, 15, 9, 9, 13, 5, 15, 5, 16, 3, 18, 1, 59, 1, 19, 1, 19, 1, 19, 1, 19, 2, 18, 3, 17, 4, 16, 5, 13, 8, 11, 13, 6, 5" left="537" top="353" width="20" height="19" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="14, 1, 35, 10, 27, 17, 25, 20, 22, 22, 20, 24, 18, 26, 16, 29, 12, 32, 10, 34, 8, 36, 6, 37, 5, 37, 5, 38, 3, 39, 3, 39, 3, 40, 2, 40, 2, 40, 2, 40, 2, 251, 1, 40, 2, 40, 2, 40, 3, 39, 3, 39, 4, 38, 4, 37, 6, 35, 7, 35, 7, 34, 9, 32, 11, 30, 13, 28, 15, 26, 18, 24, 19, 22, 21, 20, 24, 17, 26, 9, 18" left="374" top="295" width="42" height="45" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="5, 9, 10, 11, 7, 14, 4, 16, 2, 17, 2, 17, 1, 113, 1, 18, 1, 18, 1, 18, 1, 17, 2, 16, 4, 13, 7, 11, 10, 7, 13, 5, 15, 2, 10" left="448" top="356" width="19" height="22" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="1, 6, 2, 8, 1, 8, 1, 36, 1, 8, 3, 6, 5, 3, 1" left="482" top="387" width="9" height="10" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="5, 1, 15, 1, 24, 4, 10, 7, 20, 8, 5, 12, 16, 11, 1, 18, 12, 32, 9, 34, 7, 35, 8, 35, 9, 34, 9, 33, 11, 32, 11, 32, 10, 33, 9, 33, 9, 34, 8, 34, 8, 34, 8, 34, 8, 34, 9, 33, 9, 33, 10, 32, 10, 32, 11, 31, 11, 31, 12, 31, 11, 31, 12, 29, 13, 28, 15, 25, 18, 23, 20, 21, 23, 17, 27, 14, 35, 6, 10" left="182" top="248" width="42" height="35" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="8, 3, 12, 7, 10, 9, 8, 11, 6, 13, 5, 13, 5, 14, 4, 15, 3, 16, 2, 16, 2, 16, 2, 16, 1, 52, 1, 17, 1, 17, 1, 15, 4, 12, 6, 11, 8, 8, 12, 4, 10" left="411" top="454" width="18" height="22" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="13, 1, 18, 8, 13, 13, 11, 15, 10, 16, 9, 17, 8, 18, 7, 19, 6, 20, 5, 21, 4, 22, 2, 24, 1, 24, 1, 24, 1, 24, 1, 24, 1, 24, 1, 24, 1, 24, 1, 48, 1, 23, 2, 21, 5, 18, 8, 16, 10, 13, 13, 11, 15, 8, 18, 6, 20, 3, 15" left="94" top="358" width="25" height="30" z_order="0">
+    </mask>
+    <mask label="particle" source="manual" occluded="0" rle="3, 2, 7, 4, 4, 6, 2, 7, 1, 8, 1, 8, 1, 18, 1, 8, 1, 8, 1, 4, 4" left="11" top="385" width="9" height="11" z_order="0">
+    </mask>
+  </image>
+</annotations>
