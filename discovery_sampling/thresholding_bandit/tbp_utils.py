@@ -123,7 +123,7 @@ class solver:
         return self.prob.regret(), self.prob.rewards, best_action, T_max
     
 class linear_solver:
-    def __init__(self, prob):
+    def __init__(self, prob, rho, epsilon):
         self.prob = prob
     def step(self):
         pass
@@ -136,22 +136,17 @@ class linear_solver:
     
     
 class Greedy_linear(linear_solver):
-    def __init__(self, prob):
-        super(Greedy_linear, self).__init__(prob)
+    def __init__(self, prob, rho, epsilon):
+        super(Greedy_linear, self).__init__(prob, rho, epsilon)
         self.init_priors()
-        self.best_arm_hat = 0
-        self.beta_t = []
-        self.Z_t = []
         self.theta_hat = np.zeros(self.prob.m)
         self.A = np.zeros([self.prob.d, self.prob.d])
         self.A0 = np.zeros(self.prob.d).astype(int)
         self.temp = np.zeros(self.prob.d)
-        
-        self.i0 = 0
-        self.c0 = 0.1
-        self.c1 = 0.1
-        self.c2 = 0.1
-        self.u = 0.1
+        self.epsilon = epsilon
+        self.rho = rho
+        self.good_arms = np.where(self.prob.x @ self.prob.theta + epsilon > rho)
+        self.bad_arms = np.where(self.prob.x @ self.prob.theta - epsilon < rho)
         
     def _build_A0(self):
         r = 0
@@ -166,134 +161,84 @@ class Greedy_linear(linear_solver):
                 #self.A += np.outer(self.prob.x[arm], self.prob.x[arm])
                 self.A0[r] = arm
                 r += 1
-                #logging.debug('current rank %s' % str(r))
-        self.c0 = np.min(np.linalg.eigvals(self.A)) / np.sqrt(self.prob.d)
-        self.c1 = np.min(np.linalg.eigvals(self.A))
         
     def init_priors(self, s0 = 1.0):
         self.theta_hat = np.zeros(self.prob.d)
         self.sigma_hat = s0 * np.eye(self.prob.d)  # to adapt according to the true distribution of theta
         
     def update_posterior(self, action, r):
-        
-        #f = self.prob.x[action, :]
-        #s_inv = np.linalg.inv(self.sigma_t)
-        #ffT = np.outer(f, f)
-        # pdb.set_trace()
-        #mu_ = np.dot(np.linalg.inv(s_inv + ffT / self.prob.noise**2), np.dot(s_inv, self.mu_t) + r * f / self.prob.noise**2)
-        #sigma_ = np.linalg.inv(s_inv + ffT/self.prob.noise**2)
-        #self.mu_t = mu_
-        #self.sigma_t = sigma_
-        
+                
         self.temp += r * self.prob.x[action]
-        
         self.A += np.outer(self.prob.x[action], self.prob.x[action])
         self.theta_hat = np.linalg.pinv(self.A) @ self.temp
         self.mean_hat = self.prob.x @ self.theta_hat
         self.sigma_hat = np.linalg.pinv(self.A)
+        self.good_arms_hat = np.where(self.mean_hat > self.rho)[0]
+        self.bad_arms_hat = np.where(self.mean_hat <= self.rho)[0]
         
-        self.best_arm_hat = np.argmax(self.mean_hat)
-        
-        return self.theta_hat#, sigma_
+        return self.theta_hat
     
-    def step(self):
-        #theta_t = self.mu_t
-        #pred = self.prob.x @ theta_t.transpose()
-        #self.prob.get_mask()
-        #pred[self.prob.mask_mat] = np.nan
+    def _sampling_rule(self, t):
         at = np.nanargmax(self.mean_hat)
         return at
     
-    def _Z(self, t):
-        # We compute rho in the following manner to avoid numerical errors
-        rewards = self.prob.x @ self.theta_hat
-        gaps = rewards[self.best_arm_hat] - rewards
-        gaps = np.delete(gaps, self.best_arm_hat, 0)
-        gaps = gaps.reshape(len(gaps), 1)
-        if np.any(gaps == 0):
-            return 0
-        Y = self.prob.x[self.best_arm_hat, :] - self.prob.x
-        Y = np.delete(Y, self.best_arm_hat, 0)
-        Y = (1/gaps)*Y
-        _I = np.ones((self.prob.d, 1))
-        design = self.prob.T
-        A_inv = np.linalg.pinv(self.prob.x.T @ np.diag(design) @ self.prob.x)
-        U, D, V = np.linalg.svd(A_inv)
-        Ainvhalf = U @ np.diag(np.sqrt(D)) @ V.T
-        newY = (Y @ Ainvhalf)**2
-        rho = newY @ _I
-        Z = (1/(2*np.max(rho)))
-        return Z
-    
-    def _stopping_rule_1(self, t, delta):
-            s_ = delta * (self.prob.x[:,None] @ self.sigma_hat @ self.prob.x[:,:,None]).flatten()
-            
-            return ((self.mean_hat - s_)[self.best_arm_hat] > np.delete(self.mean_hat + s_, self.best_arm_hat, 0)).all(), (self.mean_hat - s_)[self.best_arm_hat], np.delete(self.mean_hat + s_, self.best_arm_hat, 0)
+    def _stopping_rule(self, t, delta, epsilon):
+        x = self.prob.x
+        A_inv = self.sigma_hat
+        C = np.log(self.prob.m ** 2 / delta) / np.log(t)
+        theta_hat = self.theta_hat
+        m = self.prob.m
+        
+        #gaps = ((x - x[:,None]).reshape(-1, 2) @ theta_hat).reshape(m,m)
+        #gap = np.abs(x @ theta_hat - self.rho).min()
+        
+        norms = (np.sqrt(x[:,None] @ A_inv @ x[:,:,None]).flatten())
+        
+        return (norms * C < np.abs(x @ theta_hat - self.rho) + epsilon).sum() == m
              
         
-    def _stopping_rule(self, t, delta):
-        #logging.debug('Started stopping rule')
-        # theoretical threshold
-        temp = np.sqrt( np.linalg.det(((1 / (self.u*self.c1)) * self.A) + np.eye(self.prob.d)));
-        beta_t = self.c2 * np.log(temp/ delta)
-        # heuristic threshold
-        #beta_t = self.c2 * (np.log(1/self.delta)+ 0.5*np.log(t) + 0.5*self.d*np.log(1/self.u + 1))
-        Z_t = self._Z(t)
-        #if t % 1000 == 0:
-        #    logging.critical('[round %s] stopping rule:  %s > %s and (t >= d) = %s?' % (str(t), str(Z_t), str(beta_t), str((t >= self.d))));
-        self.Z_t.append(Z_t)
-        self.beta_t.append(beta_t)
-        return (Z_t > beta_t) and (t >= self.prob.d)
-        
-    def run(self, T_max, delta, M):
+    def run(self, T_max, delta):
+        epsilon = self.epsilon
+        self.delta = delta
         self.prob.refresh()
-        self.c2 = (1+self.u) * (self.prob.sigma**2)
         self._build_A0()
         tau = np.nan
             
-        #for t in range(M):
-        #    action = np.random.choice(self.prob.m)
-        #    r, _ = self.prob.take_action(action)
-        #    self.update_posterior(action, r)
-            #self.best_arm_hat = np.argmax(self.prob.mean_hat)
-            
-        for t in range(T_max):
-            f = self.c0 * np.sqrt(t);
-            #print(np.min(np.linalg.eigvals(self.A)), f)
-            if True:#np.min(np.linalg.eigvals(self.A)) < f:
-                action = self.A0[self.i0]
-                self.i0 = np.mod(self.i0 + 1, self.prob.d)
-                r, _ = self.prob.take_action(action)
-                self.update_posterior(action, r)
-                
-            else:
-                action = self.step()
-                r, _ = self.prob.take_action(action)
-                self.update_posterior(action, r)
-            
-            stop,_,_ = self._stopping_rule_1(t, delta)
-            
-            if stop:
-                #print('stop')
-                #self.prob.tau = t
+        for t in range(self.prob.d, T_max):
+            action = self._sampling_rule(t)
+            r, _ = self.prob.take_action(action)
+            self.update_posterior(action, r)
+                        
+            if self._stopping_rule(t, delta, epsilon):
                 tau = t
                 break
-            
         
-        return self.prob.regret(), self.prob.rewards, self.best_arm_hat, tau
+        #success = self.good_arms < self.good_arms_hat and self.bad_arms < self.bad_arms_hat
+        
+        true_means = self.prob.x @ self.prob.theta
+        performance = ((true_means[self.good_arms_hat] + epsilon <= self.rho).sum(),
+                        (true_means[self.bad_arms_hat] - epsilon > self.rho).sum())
+        
+        return self.good_arms_hat, performance, tau
     
     
 class lazy_TS(linear_solver):
-    def __init__(self, prob, laziness_factor=1, averaging=True):
-        super(lazy_TS, self).__init__(prob)
+    def __init__(self, prob, rho, epsilon, laziness_factor=1, averaging=True):
+        
+        super(lazy_TS, self).__init__(prob, rho, epsilon)
         self.init_priors()
-        self.best_arm_hat = 0
-        self.beta_t = []
-        self.Z_t = []
         self.theta_hat = np.zeros(self.prob.m)
         self.A = np.zeros([self.prob.d, self.prob.d])
         self.A0 = np.zeros(self.prob.d).astype(int)
         self.temp = np.zeros(self.prob.d)
+        self.epsilon = epsilon
+        self.rho = rho
+        self.good_arms = np.where(self.prob.x @ self.prob.theta + epsilon > rho)
+        self.bad_arms = np.where(self.prob.x @ self.prob.theta - epsilon < rho)
+        self.best_arm_hat = 0
+        self.beta_t = []
+        self.Z_t = []
+
         self.g = self.prob.d
         self.laziness_factor = laziness_factor
         self.design = np.zeros(self.prob.m)
@@ -337,24 +282,26 @@ class lazy_TS(linear_solver):
         max_iter = 1000
         # construct Y
         rewards = self.prob.x @ self.theta_hat
-        gaps = np.max(rewards) - rewards
-        gaps = np.delete(gaps, self.best_arm_hat, 0)
+        gaps = rewards - self.rho
+        bad_arms = np.where(gaps <= 0)[0]
+        good_arms = np.where(gaps > 0)[0]
+        gaps = np.delete(gaps, bad_arms, 0)
+        #gaps = np.delete(gaps, self.best_arm_hat, 0)
         gaps = gaps.reshape(len(gaps), 1)
-        Y = self.prob.x[self.best_arm_hat, :] - self.prob.x
-        Y = np.delete(Y, self.best_arm_hat, 0)
-        Y = (1 / gaps) * Y
+        X = self.prob.x[good_arms, :]
+        X = (1 / gaps) * X
         _I = np.ones((self.prob.d, 1))
         for count in range(1, max_iter):
             A_inv = np.linalg.pinv(self.prob.x.T @ np.diag(design) @ self.prob.x)
             U, D, V = np.linalg.svd(A_inv)
             Ainvhalf = U @ np.diag(np.sqrt(D)) @ V.T
 
-            newY = (Y @ Ainvhalf)**2
-            rho = newY @ _I  # np.ones((newY.shape[1], 1))
+            newX = (X @ Ainvhalf)**2
+            phi = newX @ _I  # np.ones((newY.shape[1], 1))
 
-            idx = np.argmax(rho)
-            y = Y[idx, :, None]
-            g = ((self.prob.x @ A_inv @ y) * (self.prob.x @ A_inv @ y)).flatten()
+            idx = np.argmax(phi)
+            x = X[idx, :, None]
+            g = ((self.prob.x @ A_inv @ x) * (self.prob.x @ A_inv @ x)).flatten()
             g_idx = np.argmax(g)
 
             gamma = 2 / (count + 2)
@@ -378,7 +325,7 @@ class lazy_TS(linear_solver):
         idx_fix = np.where(design < 1e-5)[0]
         design[idx_fix] = 0
         design /= np.sum(design)
-        return design, np.max(rho)
+        return design, np.max(phi)
     
     def _Lazy_update(self, t):
         if t == int(self.g):
@@ -409,6 +356,8 @@ class lazy_TS(linear_solver):
         self.mean_hat = self.prob.x @ self.theta_hat
         self.sigma_hat = np.linalg.pinv(self.A)
         
+        self.good_arms_hat = np.where(self.mean_hat > self.rho)[0]
+        self.bad_arms_hat = np.where(self.mean_hat <= self.rho)[0]
         self.best_arm_hat = np.argmax(self.mean_hat)
         
         return self.theta_hat#, sigma_
@@ -421,7 +370,7 @@ class lazy_TS(linear_solver):
         at = np.nanargmax(self.mean_hat)
         return at
     
-    def _sampling_rule1(self, t):
+    def _sampling_rule_2(self, t):
         arm = np.random.choice(self.prob.m, 1, p=self.design)[0]
         return arm
         
@@ -470,27 +419,22 @@ class lazy_TS(linear_solver):
         Z = (1/(2*np.max(rho)))
         return Z
     
-    def _stopping_rule_1(self, t, delta):
-            s_ = delta * (self.prob.x[:,None] @ self.sigma_hat @ self.prob.x[:,:,None]).flatten()
-            
-            return ((self.mean_hat - s_)[self.best_arm_hat] > np.delete(self.mean_hat + s_, self.best_arm_hat, 0)).all(), (self.mean_hat - s_)[self.best_arm_hat], np.delete(self.mean_hat + s_, self.best_arm_hat, 0)
+    def _stopping_rule(self, t, delta, epsilon):
+        x = self.prob.x
+        A_inv = self.sigma_hat
+        C = np.log(self.prob.m ** 2 / delta) / np.log(t)
+        theta_hat = self.theta_hat
+        m = self.prob.m
+        
+        #gaps = ((x - x[:,None]).reshape(-1, 2) @ theta_hat).reshape(m,m)
+        #gap = np.abs(x @ theta_hat - self.rho).min()
+        
+        norms = (np.sqrt(x[:,None] @ A_inv @ x[:,:,None]).flatten())
+        
+        return (norms * C < np.abs(x @ theta_hat - self.rho) + epsilon).sum() == m
              
-        
-    def _stopping_rule(self, t, delta):
-        #logging.debug('Started stopping rule')
-        # theoretical threshold
-        temp = np.sqrt( np.linalg.det(((1 / (self.u*self.c1)) * self.A) + np.eye(self.prob.d)));
-        beta_t = self.c2 * np.log(temp/ delta)
-        # heuristic threshold
-        #beta_t = self.c2 * (np.log(1/self.delta)+ 0.5*np.log(t) + 0.5*self.d*np.log(1/self.u + 1))
-        Z_t = self._Z(t)
-        #if t % 1000 == 0:
-        #    logging.critical('[round %s] stopping rule:  %s > %s and (t >= d) = %s?' % (str(t), str(Z_t), str(beta_t), str((t >= self.d))));
-        self.Z_t.append(Z_t)
-        self.beta_t.append(beta_t)
-        return (Z_t > beta_t) and (t >= self.prob.d)
-        
     def run(self, T_max, delta, sampling_rule=1):
+        epsilon = self.epsilon
         self.delta = delta
         self.prob.refresh()
         
@@ -502,61 +446,42 @@ class lazy_TS(linear_solver):
         self._build_A0()
         tau = np.nan
             
-        for t in range(T_max):
+        for t in range(self.prob.d, T_max):
             if sampling_rule == 1:
                 action = self._sampling_rule(t)
             else:
-                action = self._sampling_rule1(t)
-            #r = self.prob.x[pull] @ self.prob.theta + np.random.normal(1, 1)[0][0]
+                action = self._sampling_rule2(t)
             r, _ = self.prob.take_action(action)
             self.update_posterior(action, r)
+
             
-            #temp += r * self.prob.x[action]
-            #self.allocation[pull] += 1
-            #self.A += np.outer(self.X[pull], self.X[pull])
-            #self.mu_hat = np.linalg.pinv(self.A) @ temp
-            #self.best_arm_hat = np.argmax(self.X @ self.mu_hat)
-            
-            if self._stopping_rule(t, delta):
+            if self._stopping_rule(t, delta, epsilon):
                 tau = t
                 break
             
             self._Lazy_update(t)
             self.design_hist.append(self.design)
+            
+        true_means = self.prob.x @ self.prob.theta
+        performance = ((true_means[self.good_arms_hat] + epsilon <= self.rho).sum(),
+                        (true_means[self.bad_arms_hat] - epsilon > self.rho).sum())
         
-        return self.prob.regret(), self.prob.rewards, self.best_arm_hat, tau
+        return self.good_arms_hat, performance, tau
     
     
 class G_allocation(linear_solver):
-    def __init__(self, prob, rho, epsilon, laziness_factor=1, averaging=True):
-        super(G_allocation, self).__init__(prob)
+    def __init__(self, prob, rho, epsilon):
+        super(G_allocation, self).__init__(prob, rho, epsilon)
         self.init_priors()
-        self.best_arm_hat = 0
-        self.beta_t = []
-        self.Z_t = []
         self.theta_hat = np.zeros(self.prob.m)
         self.A = np.zeros([self.prob.d, self.prob.d])
         self.A0 = np.zeros(self.prob.d).astype(int)
         self.temp = np.zeros(self.prob.d)
-        self.g = self.prob.d
-        self.laziness_factor = laziness_factor
-        self.design = np.zeros(self.prob.m)
-        self.design_hist = []
-        self.averaging = averaging
-        self.cumulative_design = np.zeros(self.prob.m)
-        self.support_history = []
         self.epsilon = epsilon
         self.rho = rho
         self.good_arms = np.where(self.prob.x @ self.prob.theta + epsilon > rho)
         self.bad_arms = np.where(self.prob.x @ self.prob.theta - epsilon < rho)
         
-        self.count_fe = 0
-        self.i0 = 0
-        self.c0 = 0.1
-        self.c1 = 0.1
-        self.c2 = 0.1
-        self.u = 0.1
-        self.psi_inv = 0
         
     def _build_A0(self):
         r = 0
@@ -571,10 +496,7 @@ class G_allocation(linear_solver):
                 #self.A += np.outer(self.prob.x[arm], self.prob.x[arm])
                 self.A0[r] = arm
                 r += 1
-                self.design_hist.append(self.design)
                 #logging.debug('current rank %s' % str(r))
-        self.c0 = np.min(np.linalg.eigvals(self.A)) / np.sqrt(self.prob.d)
-        self.c1 = np.min(np.linalg.eigvals(self.A))
         
     def init_priors(self, s0 = 1.0):
         self.theta_hat = np.zeros(self.prob.d)
@@ -617,7 +539,7 @@ class G_allocation(linear_solver):
         m = self.prob.m
         
         #gaps = ((x - x[:,None]).reshape(-1, 2) @ theta_hat).reshape(m,m)
-        gap = np.abs(x @ theta_hat - self.rho).min()
+        #gap = np.abs(x @ theta_hat - self.rho).min()
         
         norms = (np.sqrt(x[:,None] @ A_inv @ x[:,:,None]).flatten())
         
@@ -626,16 +548,10 @@ class G_allocation(linear_solver):
         #return (norms * C < gap).sum(1).max() == m - 1
 
         
-    def run(self, T_max, delta, sampling_rule=1):
+    def run(self, T_max, delta):
         epsilon = self.epsilon
         self.delta = delta
         self.prob.refresh()
-        
-        #temp = np.zeros(self.prob.d)
-        self.design = np.ones(self.prob.m)
-        self.design /= self.design.sum()
-        
-        self.c2 = (1+self.u) * (self.prob.sigma**2)
         self._build_A0()
         tau = np.nan
             
@@ -647,8 +563,6 @@ class G_allocation(linear_solver):
             if self._stopping_rule(t, delta, epsilon):
                 tau = t
                 break
-            
-            self.design_hist.append(self.design)
         
         #success = self.good_arms < self.good_arms_hat and self.bad_arms < self.bad_arms_hat
         
