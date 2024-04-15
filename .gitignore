@@ -32,6 +32,7 @@
 *.ptir
 *.SPA
 *.pkl
+*.tif
 
 # OS generated files #
 ######################

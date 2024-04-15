@@ -146,12 +146,12 @@ def norm_spect(df_spectr, norm_type='MINMAX', id_spetr='file_name'):
                                          df_spectr_p])
             
         return df_spectr_norm.reset_index(drop=True)
-    
-    
+
+
 def corr_matching(X_ref, y_ref, X_match, r_min=0.5):
     y_ref_ = y_ref.reset_index(drop=True)
     n_ref = X_ref.shape[0]
     #n_match = X_match.shape[0]
     R = np.corrcoef(X_ref, X_match)[:n_ref, n_ref:]
     return(y_ref_[R.argmax(0)], R.max(0))
-    
+

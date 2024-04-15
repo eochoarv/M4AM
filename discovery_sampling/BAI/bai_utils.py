@@ -25,6 +25,8 @@ import pandas as pd
 
 expit = lambda x: 1/(1+np.exp(-x))
 logit = lambda x: np.log(x / (1-x))
+def softmax(x):
+    return np.exp(x)/sum(np.exp(x))
 
 class discover:
     def __init__(self, m):
@@ -310,6 +312,72 @@ class sample_track_n_stop_solver(solver):
             
         return self.prob.regret(), self.prob.rewards, best_action, self.prob.tau
 
+
+class test_1(solver):
+    def __init__(self, prob):
+        super(test_1, self).__init__(prob)
+        self.prob = prob
+        self.alpha_star = np.ones(self.prob.m) / self.prob.m
+        self.alpha_hist = []
+    def step(self, t):
+        
+        m = self.prob.m
+        T = self.prob.T
+        mu_hat = self.prob.mean_hat
+        i_star = np.argmax(mu_hat)
+        if np.min(T) < np.sqrt(t):
+            action = np.argmin(T)
+        else:
+            #for a in range(m):
+            a = np.argmax(mu_hat)
+            probs = softmax(mu_hat)
+            mu_hat_ = mu_hat.copy()
+            mu_hat_ = mu_hat_ - 1 / (2 * np.max(T)**2)
+            mu_hat_[a] = mu_hat_[a] - 1 / (2 * np.min(T)**2)
+            #probs_ = softmax(mu_hat_)
+            #if np.armax(probs) == a:
+                
+                
+                
+            y_star = solver_F(mu_hat)
+            alpha_star = (np.array([x(mu_hat[i_star], mu_hat[a], y_star) for a in range(m)]) / 
+                          np.sum([x(mu_hat[i_star], mu_hat[a], y_star) for a in range(m)]))
+            self.alpha_star = alpha_star
+            action = np.argmax(t*alpha_star - T)
+        self.alpha_hist.append(self.alpha_star)
+        z = []
+        
+        for a in np.setdiff1d(range(m), i_star):
+            mu_prime = mu_hat.copy()
+            mu_prime[a] = mu_hat.max()
+            z.append(sum(T * np.power(mu_prime - mu_hat, 2)) / 2)
+        
+        stop = min(z) >= self.beta[t]
+        
+        return action, stop
+        
+    def run(self, T_max, delta):
+        self.prob.refresh()
+        m = self.prob.m
+        t_array = np.arange(T_max)+1.001
+        self.beta = m * np.log(np.log(t_array)) + np.log(1/delta)
+        for t in range(m):
+            r, _ = self.prob.take_action(t)
+
+        for t in range(m, T_max):
+            action, stop = self.step(t)
+            r, _ = self.prob.take_action(action)
+            
+            if stop:
+                #print('stop')
+                self.prob.tau = t
+                break
+            
+        best_action = np.argmax(self.prob.mean_hat)
+        self.prob.best_action = best_action
+        #self.tau = T_max
+            
+        return self.prob.regret(), self.prob.rewards, best_action, self.prob.tau
     
 class Greedy_linear(linear_solver):
     def __init__(self, prob):
