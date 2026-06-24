@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 import warnings
+from sklearn.metrics import pairwise_distances
 
 warnings.filterwarnings("ignore")
 
@@ -154,4 +155,51 @@ def corr_matching(X_ref, y_ref, X_match, r_min=0.5):
     #n_match = X_match.shape[0]
     R = np.corrcoef(X_ref, X_match)[:n_ref, n_ref:]
     return(y_ref_[R.argmax(0)], R.max(0))
+
+
+def nn_matching(X_ref, y_ref, X_match, r_min=0.5, tau=10):
+    y_ref_ = y_ref.reset_index(drop=True)
+    n_ref = X_ref.shape[0]
+    D = pairwise_distances(X_ref, X_match)
+    df_D = pd.DataFrame(D)
+    df_D['polymer_ref'] = y_ref
+    smx = (df_D.melt(id_vars=['polymer_ref']).
+                 groupby(['variable','polymer_ref']).
+                 min().
+                 reset_index().
+                 pivot(index='variable', columns='polymer_ref', values='value'))
+
+    label_list = np.array(smx.columns)
+    smx = smx.to_numpy()
+    smx_1 = (smx / smx.min(1)[:,None])
+    smx_2 = (smx / np.sort(smx, 1)[:,1][:,None])
+    smx_1[smx_1 == 1] = smx_2[smx_1 == 1]
+    smx = np.exp(-smx_1/tau)
+    #(y_ref_[smx.argmin(1)], smx.min(1))
+    
+    return(label_list[np.argmax(smx, 1)], smx.max(1))
+
+def corr_matching_nan(X_ref, y_ref, X_match, r_min=0.5):
+    y_ref_ = y_ref.reset_index(drop=True)
+    n_ref = X_ref.shape[0]
+    #n_match = X_match.shape[0]
+    X_match_zeros = X_match.copy()
+    X_match_zeros[np.isnan(X_match_zeros)] = 0
+    X_ref_nan = X_ref.copy()
+    c = np.sum(np.isnan(X_match), 1)
+    
+    R = (np.cov(X_ref, X_match_zeros))/ (np.nanstd(X_ref_nan, 1)[:,None] * np.nanstd(X_match, 1)[None,:]) * (c-1)/c
+    R = R[:n_ref, n_ref:]
+    #R = np.corrcoef(X_ref, X_match)[:n_ref, n_ref:]
+    return(y_ref_[R.argmax(0)], R.max(0))
+
+
+def norm_spect_pivot(x, norm_type='SNV'):
+    if norm_type=='SNV':
+        return (x - x.mean(1)[:,None]) / x.std(1)[:,None]
+    if norm_type=='MINMAX':
+        return (x - x.min(1)[:,None]) / (x.max(1)[:,None] - x.min(1)[:,None])
+    if norm_type=='Q':
+        iqr = np.quantile(x, .8, axis=1)-np.quantile(x, .2, axis=1)
+        return (x - np.median(x, 1)[:,None]) / iqr[:,None]
 

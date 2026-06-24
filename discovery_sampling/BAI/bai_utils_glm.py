@@ -121,19 +121,18 @@ class linear_solver:
         self.rho = rho
         self.init_priors()
     
-    def performance_e(self):
-        epsilon = self.epsilon
-        true_means = expit(self.prob.x @ self.prob.theta + self.prob.intercept)
-        performance = ((true_means[self.good_arms_hat] + epsilon <= self.rho).sum(),
+    #def performance_e(self):
+    #    epsilon = self.epsilon
+    #    true_means = expit(self.prob.x @ self.prob.theta + self.prob.intercept)
+    #    performance = ((true_means[self.good_arms_hat] + epsilon <= self.rho).sum(),
                         (true_means[self.bad_arms_hat] - epsilon > self.rho).sum())
         
-        return performance
+    #    return performance
     
     def performance(self):
-        epsilon = self.epsilon
+
         true_means = expit(self.prob.x @ self.prob.theta + self.prob.intercept)
-        performance = ((true_means[self.good_arms_hat] <= self.rho).sum(),
-                        (true_means[self.bad_arms_hat] > self.rho).sum())
+        performance = (true_means[self.best_arm_hat] == self.rho
         
         return performance
     

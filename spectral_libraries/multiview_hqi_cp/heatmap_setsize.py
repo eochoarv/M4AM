@@ -1,0 +1,464 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Feb 19 17:08:39 2026
+
+@author: eochoa
+"""
+
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+#from utils import *
+#from utils_cpdir import *
+from utils_experiments import *
+from utils_mvcp import *
+from utils import *
+import os
+from tqdm import tqdm
+import warnings
+from datetime import date
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+
+warnings.filterwarnings("ignore")
+
+# Reference Libraries
+
+rebecca_data_ir = pd.read_csv('processed_data_new/rebecca_data_ir_final.csv')
+del rebecca_data_ir['Unnamed: 0']
+rebecca_data_ir.columns = list(np.float64(rebecca_data_ir.columns[:-4])) + list(rebecca_data_ir.columns[-4:])
+
+rebecca_data_raman = pd.read_csv('processed_data_new/rebecca_data_raman_final_specy.csv')
+del rebecca_data_raman['Unnamed: 0']
+rebecca_data_raman.columns = list(np.float64(rebecca_data_raman.columns[:-4])) + list(rebecca_data_raman.columns[-4:])
+
+# Process Data
+poly_abbr_table = pd.read_excel('data_new/CCOPTIR_20240604_MixedMPsStdsv2_RP_mIRage_allccdata_manualsort.xlsx',
+         sheet_name='Other cc data and sort').iloc[:9,-5:-3]
+poly_abbr_table.columns = ['polymer', 'abbr']
+
+poly_and_comments_list = pd.read_excel('data_new/CCOPTIR_20240604_MixedMPsStdsv2_RP_mIRage_allccdata_manualsort.xlsx',
+         sheet_name='Other cc data and sort').iloc[:,9:13]
+
+poly_list = list(np.unique(rebecca_data_raman['polymer'])) + ['LDPE']
+
+notes_mix_std_fluor = pd.read_excel('data_new/MVCP_20241206_RP_AllCCOPTIRData_FluorescenceOnly.xlsx',
+         sheet_name='MPs + Standards').iloc[:, [0,9,10,11,12]]
+notes_mix_std_fluor.columns = ['id','polymer_ir', 'polymer_raman', 'polymer_overall', 'comments']
+notes_mix_std_fluor = notes_mix_std_fluor.query('polymer_overall in @poly_list')
+notes_mix_std_fluor_ids = np.array(notes_mix_std_fluor['id'])
+
+
+IR_spectra_mix_std = pd.read_csv('processed_data_new/data_ir_mix_std_rebecca.csv')
+del IR_spectra_mix_std['Unnamed: 0']
+#non_bg = IR_spectra['background'] == 'no_background'
+IR_spectra_mix_std.columns = list(np.float64(IR_spectra_mix_std.columns[:-8])) + list(IR_spectra_mix_std.columns[-8:])
+
+IR_spectra_mix_std = (IR_spectra_mix_std.
+ merge(poly_abbr_table, left_on='polymer', right_on='abbr').
+ drop(['polymer_x', 'abbr'],axis=1).
+ rename({'polymer_y':'polymer'},axis=1).
+iloc[:,list(range(IR_spectra_mix_std.shape[1]-3))+[-1,-3,-2]])
+
+IR_spectra_mix_std_rest = IR_spectra_mix_std.loc[[x not in poly_list 
+                                                  for x in IR_spectra_mix_std['polymer']],:].reset_index(drop=True)
+#IR_spectra_mix_std = IR_spectra_mix_std.loc[[x in ['LDPE', 'PP', 'PSL'] for x in IR_spectra_mix_std['polymer']],:].reset_index(drop=True)
+IR_spectra_mix_std = IR_spectra_mix_std.loc[[x in poly_list 
+                                             for x in IR_spectra_mix_std['polymer']],:].reset_index(drop=True)
+IR_spectra_mix_std.loc[IR_spectra_mix_std['polymer'] == 'LDPE','polymer'] = 'PE'
+IR_spectra_mix_std = IR_spectra_mix_std.sort_values('id').reset_index(drop=True)
+
+
+Raman_spectra_mix_std = pd.read_csv('processed_data_new/data_raman_mix_std_rebecca_specy.csv')
+#notes_mix_std_rest = np.array(Raman_spectra_mix_std['comments'])
+notes_mix_std = Raman_spectra_mix_std.iloc[:,-5:]
+
+notes_mix_std = (notes_mix_std.
+                 merge(poly_abbr_table, left_on='polymer', right_on='abbr').
+                 drop(['polymer_x', 'abbr'], axis=1).
+                 rename({'polymer_y':'polymer_overall'},axis=1).
+                 merge(poly_abbr_table, left_on='polymer_raman', right_on='abbr').
+                 drop(['polymer_raman', 'abbr'], axis=1).
+                 rename({'polymer':'polymer_raman'},axis=1).
+                 merge(poly_abbr_table, left_on='polymer_ir', right_on='abbr').
+                 drop(['polymer_ir', 'abbr'], axis=1).
+                 rename({'polymer':'polymer_ir'},axis=1))
+
+notes_mix_std.loc[notes_mix_std['polymer_overall'] == 'LDPE','polymer_overall'] = 'PE'
+notes_mix_std.loc[notes_mix_std['polymer_raman'] == 'LDPE','polymer_raman'] = 'PE'
+notes_mix_std.loc[notes_mix_std['polymer_ir'] == 'LDPE','polymer_ir'] = 'PE'
+
+
+#notes_mix_std_rest[[x is np.nan for x in notes_mix_std_rest]] = ''
+del Raman_spectra_mix_std['Unnamed: 0']
+Raman_spectra_mix_std.columns = list(np.float64(Raman_spectra_mix_std.columns[:-7])) + list(Raman_spectra_mix_std.columns[-7:])
+Raman_spectra_mix_std = (Raman_spectra_mix_std.
+ merge(poly_abbr_table, left_on='polymer', right_on='abbr').
+ drop(['polymer_x', 'abbr'],axis=1).
+ rename({'polymer_y':'polymer'},axis=1).
+iloc[:,list(range(Raman_spectra_mix_std.shape[1]-5))+[-1,-2]])
+
+# poly_and_comments_list_rest = poly_and_comments_list.loc[[x not in poly_list for x in Raman_spectra_mix_std['polymer']],:].reset_index(drop=True)
+
+notes_mix_std = notes_mix_std.sort_values('id').reset_index(drop=True)
+Raman_spectra_mix_std = Raman_spectra_mix_std.sort_values('id').reset_index(drop=True)
+
+Raman_spectra_mix_std_rest = Raman_spectra_mix_std.loc[[x not in poly_list 
+                                                        for x in Raman_spectra_mix_std['polymer']],:].reset_index(drop=True)
+notes_mix_std_rest = notes_mix_std.loc[[x not in poly_list 
+                                        for x in Raman_spectra_mix_std['polymer']],:].reset_index(drop=True)
+
+# poly_and_comments_list = poly_and_comments_list.loc[[x in poly_list for x in Raman_spectra_mix_std['polymer']],:].reset_index(drop=True)
+
+notes_mix_std = notes_mix_std.loc[[x in poly_list 
+                                   for x in Raman_spectra_mix_std['polymer']],:].reset_index(drop=True)
+Raman_spectra_mix_std = Raman_spectra_mix_std.loc[[x in poly_list 
+                                                   for x in Raman_spectra_mix_std['polymer']],:].reset_index(drop=True)
+
+Raman_spectra_mix_std.loc[Raman_spectra_mix_std['polymer'] == 'LDPE','polymer'] = 'PE'
+
+lower_range_raman_1 = 600
+upper_range_raman_1 = 1850
+lower_range_raman_2 = 2750
+upper_range_raman_2 = 3500
+
+wn_raman = np.array(Raman_spectra_mix_std.columns[:-4])
+
+idx_raman = list(np.logical_or(np.logical_and(wn_raman >lower_range_raman_1,
+                           wn_raman <upper_range_raman_1
+                           ),
+                 np.logical_and(wn_raman >lower_range_raman_2,
+                           wn_raman <upper_range_raman_2
+                           ))) + [True]*4
+
+Raman_spectra_mix_std = Raman_spectra_mix_std.loc[:,idx_raman]
+rebecca_data_raman = rebecca_data_raman.loc[:,idx_raman]
+
+ids_ideal_set = [(x in poly_list) and (y in poly_list) and (z in poly_list) 
+                 for x, y, z in zip(notes_mix_std['polymer_raman'], 
+                                    notes_mix_std['polymer_ir'], 
+                                    notes_mix_std['polymer_overall'])]
+
+ids_ideal_set = np.logical_and([x not in notes_mix_std_fluor_ids 
+                                for x in Raman_spectra_mix_std['id']],
+                               ids_ideal_set)
+
+Raman_spectra_mix_std['id'] = ["mix_std_"+str(x) for x in Raman_spectra_mix_std['id']]
+IR_spectra_mix_std['id'] = ["mix_std_"+str(x) for x in IR_spectra_mix_std['id']]
+
+Raman_spectra_mix_std_ideal = Raman_spectra_mix_std.loc[ids_ideal_set,:].reset_index(drop=True)
+IR_spectra_mix_std_ideal = IR_spectra_mix_std.loc[ids_ideal_set,:].reset_index(drop=True)
+
+Raman_spectra_mix_std_lq = Raman_spectra_mix_std.loc[~ids_ideal_set,:].reset_index(drop=True)
+IR_spectra_mix_std_lq = IR_spectra_mix_std.loc[~ids_ideal_set,:].reset_index(drop=True)
+
+Raman_spectra_mix_std_lq = Raman_spectra_mix_std_lq.query('id != "mix_std_223"').reset_index(drop=True)
+IR_spectra_mix_std_lq = IR_spectra_mix_std_lq.query('id != "mix_std_223"').reset_index(drop=True)
+
+
+
+poly_abbr_table = pd.read_excel('data_new/CCOPTIR_20240326_MixedMPsv7.3_RP_mIRage_allccdata_manualsort.xlsx',
+         sheet_name='Other cc data and sort').iloc[:9,-5:-3]
+poly_abbr_table.columns = ['polymer', 'abbr']
+
+poly_and_comments_list = pd.read_excel('data_new/CCOPTIR_20240326_MixedMPsv7.3_RP_mIRage_allccdata_manualsort.xlsx',
+         sheet_name='Other cc data and sort').iloc[:,9:13]
+
+poly_list = list(np.unique(rebecca_data_raman['polymer'])) + ['LDPE']
+
+notes_mix_fluor = pd.read_excel('data_new/MVCP_20241206_RP_AllCCOPTIRData_FluorescenceOnly.xlsx',
+         sheet_name='MPs Only').iloc[:, [0,9,10,11,12]]
+notes_mix_fluor.columns = ['id','polymer_ir', 'polymer_raman', 'polymer_overall', 'comments']
+notes_mix_fluor = notes_mix_fluor.query('polymer_overall in @poly_list')
+notes_mix_fluor_ids = np.array(notes_mix_fluor['id'])
+
+
+IR_spectra_mix = pd.read_csv('processed_data_new/data_ir_mix_rebecca.csv')
+del IR_spectra_mix['Unnamed: 0']
+#non_bg = IR_spectra['background'] == 'no_background'
+IR_spectra_mix.columns = list(np.float64(IR_spectra_mix.columns[:-8])) + list(IR_spectra_mix.columns[-8:])
+
+IR_spectra_mix = (IR_spectra_mix.
+ merge(poly_abbr_table, left_on='polymer', right_on='abbr').
+ drop(['polymer_x', 'abbr'],axis=1).
+ rename({'polymer_y':'polymer'},axis=1).
+iloc[:,list(range(IR_spectra_mix.shape[1]-3))+[-1,-3,-2]])
+
+IR_spectra_mix_rest = IR_spectra_mix.loc[[x not in poly_list 
+                                          for x in IR_spectra_mix['polymer']],:].reset_index(drop=True)
+#IR_spectra_mix = IR_spectra_mix.loc[[x in ['LDPE', 'PP', 'PSL'] for x in IR_spectra_mix['polymer']],:].reset_index(drop=True)
+IR_spectra_mix = IR_spectra_mix.loc[[x in poly_list 
+                                     for x in IR_spectra_mix['polymer']],:].reset_index(drop=True)
+IR_spectra_mix.loc[IR_spectra_mix['polymer'] == 'LDPE','polymer'] = 'PE'
+IR_spectra_mix = IR_spectra_mix.sort_values('id').reset_index(drop=True)
+
+
+#Raman_spectra_mix = pd.read_csv('processed_data_new/data_raman_mix_rebecca.csv')
+Raman_spectra_mix = pd.read_csv('processed_data_new/data_raman_mix_rebecca_specy.csv')
+#notes_mix_rest = np.array(Raman_spectra_mix['comments'])
+notes_mix = Raman_spectra_mix.iloc[:,-5:]
+
+notes_mix = (notes_mix.
+                 merge(poly_abbr_table, left_on='polymer', right_on='abbr').
+                 drop(['polymer_x', 'abbr'], axis=1).
+                 rename({'polymer_y':'polymer_overall'},axis=1).
+                 merge(poly_abbr_table, left_on='polymer_raman', right_on='abbr').
+                 drop(['polymer_raman', 'abbr'], axis=1).
+                 rename({'polymer':'polymer_raman'},axis=1).
+                 merge(poly_abbr_table, left_on='polymer_ir', right_on='abbr').
+                 drop(['polymer_ir', 'abbr'], axis=1).
+                 rename({'polymer':'polymer_ir'},axis=1))
+
+notes_mix.loc[notes_mix['polymer_overall'] == 'LDPE','polymer_overall'] = 'PE'
+notes_mix.loc[notes_mix['polymer_raman'] == 'LDPE','polymer_raman'] = 'PE'
+notes_mix.loc[notes_mix['polymer_ir'] == 'LDPE','polymer_ir'] = 'PE'
+
+
+#notes_mix_rest[[x is np.nan for x in notes_mix_rest]] = ''
+del Raman_spectra_mix['Unnamed: 0']
+Raman_spectra_mix.columns = list(np.float64(Raman_spectra_mix.columns[:-7])) + list(Raman_spectra_mix.columns[-7:])
+Raman_spectra_mix = (Raman_spectra_mix.
+ merge(poly_abbr_table, left_on='polymer', right_on='abbr').
+ drop(['polymer_x', 'abbr'],axis=1).
+ rename({'polymer_y':'polymer'},axis=1).
+ iloc[:,list(range(Raman_spectra_mix.shape[1]-5))+[-1,-2]])
+
+# poly_and_comments_list_rest = poly_and_comments_list.loc[[x not in poly_list for x in Raman_spectra_mix['polymer']],:].reset_index(drop=True)
+
+notes_mix = notes_mix.sort_values('id').reset_index(drop=True)
+Raman_spectra_mix = Raman_spectra_mix.sort_values('id').reset_index(drop=True)
+
+Raman_spectra_mix_rest = Raman_spectra_mix.loc[[x not in poly_list 
+                                                for x in Raman_spectra_mix['polymer']],:].reset_index(drop=True)
+notes_mix_rest = notes_mix.loc[[x not in poly_list 
+                                for x in Raman_spectra_mix['polymer']],:].reset_index(drop=True)
+
+# poly_and_comments_list = poly_and_comments_list.loc[[x in poly_list for x in Raman_spectra_mix['polymer']],:].reset_index(drop=True)
+
+notes_mix = notes_mix.loc[[x in poly_list 
+                           for x in Raman_spectra_mix['polymer']],:].reset_index(drop=True)
+Raman_spectra_mix = Raman_spectra_mix.loc[[x in poly_list 
+                                           for x in Raman_spectra_mix['polymer']],:].reset_index(drop=True)
+
+Raman_spectra_mix.loc[Raman_spectra_mix['polymer'] == 'LDPE','polymer'] = 'PE'
+
+Raman_spectra_mix = Raman_spectra_mix.loc[:,idx_raman]
+
+ids_ideal_set = [(x in poly_list) and (y in poly_list) and (z in poly_list) 
+                 for x, y, z in zip(notes_mix['polymer_raman'], notes_mix['polymer_ir'], notes_mix['polymer_overall'])]
+ids_ideal_set = np.logical_and([x not in notes_mix_fluor_ids 
+                                for x in Raman_spectra_mix['id']],
+                               ids_ideal_set)
+
+Raman_spectra_mix['id'] = ["mix_"+str(x) for x in Raman_spectra_mix['id']]
+IR_spectra_mix['id'] = ["mix_"+str(x) for x in IR_spectra_mix['id']]
+
+Raman_spectra_mix_ideal = Raman_spectra_mix.loc[ids_ideal_set,:].reset_index(drop=True)
+IR_spectra_mix_ideal = IR_spectra_mix.loc[ids_ideal_set,:].reset_index(drop=True)
+
+Raman_spectra_mix_lq = Raman_spectra_mix.loc[~ids_ideal_set,:].reset_index(drop=True)
+IR_spectra_mix_lq = IR_spectra_mix.loc[~ids_ideal_set,:].reset_index(drop=True)
+
+
+
+IR_spectra_all = pd.concat([IR_spectra_mix_std_ideal, IR_spectra_mix_ideal,
+                            IR_spectra_mix_std_lq, IR_spectra_mix_lq], axis=0).reset_index(drop=True)
+
+Raman_spectra_all = pd.concat([Raman_spectra_mix_std_ideal, Raman_spectra_mix_ideal,
+                               Raman_spectra_mix_std_lq, Raman_spectra_mix_lq], 
+                              axis=0).reset_index(drop=True)
+#wn = np.array(Raman_spectra_all.columns[:-4])
+
+(x_train_ir, 
+ x_train_raman, 
+ label_train_IR, 
+ label_train_Raman, 
+ x_ir, 
+ x_raman, 
+ label_ir, 
+ label_raman, 
+ label_table,
+ ids_test) = process_data(rebecca_data_ir, 
+                             rebecca_data_raman,   
+                             IR_spectra_all,
+                             Raman_spectra_all)
+
+
+quality = np.array(['ideal']*(IR_spectra_mix_std_ideal.shape[0] + IR_spectra_mix_ideal.shape[0])+ 
+                   ['low_ir']*(IR_spectra_mix_std_lq.shape[0] + IR_spectra_mix_lq.shape[0]))
+
+smx_all_IR = 1-np.power(smx_nn(x_train_ir, x_ir, label_train_IR, tau=1.4427),1)
+smx_all_Raman = 1-np.power(smx_nn(x_train_raman, x_raman, label_train_Raman, tau=1.4427),1)
+score_list = [smx_all_IR, smx_all_Raman]
+
+smx_all_IR_all = 1-np.power(smx_nn_all(x_train_ir, x_ir, label_train_IR, tau=1.4427),1)
+smx_all_Raman_all = 1-np.power(smx_nn_all(x_train_raman, x_raman, label_train_Raman, tau=1.4427),1)
+score_all_list = [smx_all_IR_all, smx_all_Raman_all]
+
+# Get the current date
+todays_date = date.today()
+year = str(todays_date.year)
+if todays_date.month < 10:
+    month = '0'+str(todays_date.month)
+else:
+    month = str(todays_date.month)
+
+if todays_date.day < 10:
+    day = '0'+str(todays_date.day)
+else:
+    day = str(todays_date.day)
+
+current_time = year+month+day
+directory_name = 'results_final/'+current_time
+if not os.path.isdir(directory_name):
+    os.mkdir(directory_name)
+
+print(np.nanmean(np.argmin(score_list[0], 1) == label_ir), 
+      np.nanmean(np.argmin(score_list[1], 1) == label_raman))
+
+print(np.nanmean(np.argmin(score_list[0][quality=='ideal'], 1) == label_ir[quality=='ideal']), 
+      np.nanmean(np.argmin(score_list[1][quality=='ideal'], 1) == label_raman[quality=='ideal']))
+
+print(np.nanmean(np.argmin(score_list[0][quality=='low_ir'], 1) == label_ir[quality=='low_ir']), 
+      np.nanmean(np.argmin(score_list[1][quality=='low_ir'], 1) == label_raman[quality=='low_ir']))
+
+
+# Data Experiments Figure 3
+
+IR_spectra_all_ = IR_spectra_all.copy()
+Raman_spectra_all_ = Raman_spectra_all.copy()
+IR_spectra_all_['quality'] = ['ideal' if x == 'ideal' else 'low' for x in quality]
+Raman_spectra_all_['quality'] = ['ideal' if x == 'ideal' else 'low' for x in quality]
+
+
+top_hqi_values = 1-pd.DataFrame(np.concatenate(score_list, axis=1))
+top_hqi_values.columns = [x + ' (IR)' for x in label_table['polymer']] + [x + ' (Raman)' for x in label_table['polymer']]
+top_hqi_values = pd.concat([top_hqi_values, IR_spectra_all.iloc[:,-6:-1]], axis=1)
+top_hqi_values['quality'] = ['ideal' if x == 'ideal' else 'low' for x in quality]
+
+
+all_hqi_values = 1-pd.DataFrame(np.concatenate(score_all_list, axis=0).T)
+
+
+
+all_hqi_values.columns = [x + ' (IR)' for x in rebecca_data_ir['id']] + [x + ' (Raman)' for x in rebecca_data_raman['id']] #list(rebecca_data_ir['id']) + list(rebecca_data_raman['id'])
+all_hqi_values = pd.concat([all_hqi_values, IR_spectra_all.iloc[:,-6:-1]], axis=1)
+all_hqi_values['quality'] = ['ideal' if x == 'ideal' else 'low' for x in quality]
+
+
+
+alphas = [0.05]
+N_sim = 100
+
+(df_res_lis, 
+ df_res_sd_lis,
+ df_res_cov_lis, 
+ df_res_cov_sd_lis, 
+ df_res_all_mean_lis, 
+ df_res_cov_all_mean_lis, 
+ df_res_all_lis, 
+ df_res_cov_all_lis)  = experiment_fig_3(score_list, #[[score_list[0][quality=='low_ir'], score_list[1][quality=='low_ir']][0][quality=='low_ir'], score_list[1][quality=='low_ir']]
+                                   label_ir,#[quality=='low_ir']
+                                   quality,#[quality=='low_ir']
+                                   alphas=alphas,
+                                   N_sim=N_sim, 
+                                   quant_prop=.2, 
+                                   cal_prop=0.8, 
+                                   seed_init=0)
+
+
+table_set_size_mvcp_IR_low = np.mean([confusion_matrix(x,y,labels=range(7)) 
+                                      for y,x in zip(df_res_all_lis[0]['mvcp_low_ir'], 
+                                                     df_res_all_lis[0]['view_IR_low_ir'])], 0)
+
+table_set_size_mvcp_IR_low_std = np.std([confusion_matrix(x,y,labels=range(7)) 
+                                      for y,x in zip(df_res_all_lis[0]['mvcp_low_ir'], 
+                                                     df_res_all_lis[0]['view_IR_low_ir'])], 0)
+
+table_set_size_mvcp_IR_low_df = pd.DataFrame(table_set_size_mvcp_IR_low) 
+table_set_size_mvcp_IR_low_df.index = pd.MultiIndex.from_product([['IR'], 
+                                       table_set_size_mvcp_IR_low_df.index])
+table_set_size_mvcp_IR_low_df.columns = pd.MultiIndex.from_product([['mvcp'], 
+                                         table_set_size_mvcp_IR_low_df.columns])
+
+
+table_set_size_mvcp_IR_low_std_df = pd.DataFrame(table_set_size_mvcp_IR_low_std) 
+table_set_size_mvcp_IR_low_std_df.index = pd.MultiIndex.from_product([['IR'], 
+                                       table_set_size_mvcp_IR_low_std_df.index])
+table_set_size_mvcp_IR_low_std_df.columns = pd.MultiIndex.from_product([['mvcp'], 
+                                         table_set_size_mvcp_IR_low_std_df.columns])
+
+
+
+table_set_size_mvcp_Raman_low = np.mean([confusion_matrix(x,y,labels=range(7)) 
+                                      for y,x in zip(df_res_all_lis[0]['mvcp_low_ir'], 
+                                                     df_res_all_lis[0]['view_Raman_low_ir'])], 0)
+
+table_set_size_mvcp_Raman_low_std = np.std([confusion_matrix(x,y,labels=range(7)) 
+                                      for y,x in zip(df_res_all_lis[0]['mvcp_low_ir'], 
+                                                     df_res_all_lis[0]['view_Raman_low_ir'])], 0)
+
+table_set_size_mvcp_Raman_low_df = pd.DataFrame(table_set_size_mvcp_Raman_low) 
+table_set_size_mvcp_Raman_low_df.index = pd.MultiIndex.from_product([['Raman'], 
+                                       table_set_size_mvcp_Raman_low_df.index])
+table_set_size_mvcp_Raman_low_df.columns = pd.MultiIndex.from_product([['mvcp'], 
+                                         table_set_size_mvcp_Raman_low_df.columns])
+
+table_set_size_mvcp_Raman_low_std_df = pd.DataFrame(table_set_size_mvcp_Raman_low_std) 
+table_set_size_mvcp_Raman_low_std_df.index = pd.MultiIndex.from_product([['Raman'], 
+                                       table_set_size_mvcp_Raman_low_std_df.index])
+table_set_size_mvcp_Raman_low_std_df.columns = pd.MultiIndex.from_product([['mvcp'], 
+                                         table_set_size_mvcp_Raman_low_std_df.columns])
+
+
+table_set_size_IR_Raman_low = np.mean([confusion_matrix(x,y,labels=range(7)) 
+                                       for y,x in zip(df_res_all_lis[0]['view_IR_low_ir'], 
+                                                      df_res_all_lis[0]['view_Raman_low_ir'])], 0)
+
+table_set_size_IR_Raman_low_std = np.std([confusion_matrix(x,y,labels=range(7)) 
+                                       for y,x in zip(df_res_all_lis[0]['view_IR_low_ir'], 
+                                                      df_res_all_lis[0]['view_Raman_low_ir'])], 0)
+
+table_set_size_IR_Raman_low_df = pd.DataFrame(table_set_size_IR_Raman_low) 
+table_set_size_IR_Raman_low_df.index = pd.MultiIndex.from_product([['Raman'], 
+                                       table_set_size_IR_Raman_low_df.index])
+table_set_size_IR_Raman_low_df.columns = pd.MultiIndex.from_product([['IR'], 
+                                         table_set_size_IR_Raman_low_df.columns])
+
+table_set_size_IR_Raman_low_std_df = pd.DataFrame(table_set_size_IR_Raman_low_std) 
+table_set_size_IR_Raman_low_std_df.index = pd.MultiIndex.from_product([['Raman'], 
+                                       table_set_size_IR_Raman_low_std_df.index])
+table_set_size_IR_Raman_low_std_df.columns = pd.MultiIndex.from_product([['IR'], 
+                                         table_set_size_IR_Raman_low_std_df.columns])
+
+sns.heatmap(table_set_size_mvcp_IR_low_df, cmap='Greys')
+plt.show()
+table_set_size_mvcp_IR_low_df.to_csv(directory_name+'/heatmap_set_size_mvcp_IR.csv')
+
+sns.heatmap(table_set_size_mvcp_IR_low_std_df, cmap='Greys')
+plt.show()
+table_set_size_mvcp_IR_low_std_df.to_csv(directory_name+'/heatmap_set_size_std_mvcp_IR.csv')
+
+sns.heatmap(table_set_size_mvcp_Raman_low_df, cmap='Greys')
+plt.show()
+table_set_size_mvcp_Raman_low_df.to_csv(directory_name+'/heatmap_set_size_mvcp_Raman.csv')
+
+sns.heatmap(table_set_size_mvcp_Raman_low_std_df, cmap='Greys')
+plt.show()
+table_set_size_mvcp_Raman_low_std_df.to_csv(directory_name+'/heatmap_set_size_std_mvcp_Raman.csv')
+
+sns.heatmap(table_set_size_IR_Raman_low_df, cmap='Greys')
+plt.show()
+table_set_size_IR_Raman_low_df.to_csv(directory_name+'/heatmap_set_size_IR_Raman.csv')
+
+sns.heatmap(table_set_size_IR_Raman_low_std_df, cmap='Greys')
+plt.show()
+table_set_size_IR_Raman_low_std_df.to_csv(directory_name+'/heatmap_set_size_std_IR_Raman.csv')
+
+
+particles_count_table = pd.DataFrame({'n':[x.shape[0] for x, y in zip(df_res_all_lis[0]['mvcp_low_ir'] , df_res_all_lis[0]['view_IR_low_ir'])]})
+particles_count_table.to_csv(directory_name+'/heatmap_particles_count.csv')
+

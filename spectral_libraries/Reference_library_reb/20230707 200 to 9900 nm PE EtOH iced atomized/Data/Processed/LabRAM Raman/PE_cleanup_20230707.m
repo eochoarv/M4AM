@@ -1,0 +1,106 @@
+clear all
+clc
+
+%% 
+
+Path ='C:\Users\rparham\Documents\Projects\M4AM\CC-OPTIR project\Raman\20230707 200 to 9900 nm PE EtOH iced atomized\Processed\firstlookplots\';
+
+
+%% 
+
+% Use this for 20230707 data
+% wavenumbersRaman = xlsread('20230707_200to9900nmPE_EtOHiced_atomized_allSpectra.xlsx',1,'A2:A2480');
+% spectraExp = xlsread('20230707_200to9900nmPE_EtOHiced_atomized_allSpectra.xlsx',1,'B2:BU2480');
+
+%Use this for 20230822 data
+wavenumbersRaman = xlsread('20230707_200to9900nmPE_EtOHiced_atomized_allSpectra_0822data.xlsx',1,'A2:A2480');
+spectraExp = xlsread('20230707_200to9900nmPE_EtOHiced_atomized_allSpectra_0822data.xlsx',1,'B2:AW2480');
+
+% each column corresponds to a different particle
+% the rows correspond with wavenumbners in wavenumbersRaman
+
+%% 
+
+for i = 1:size(spectraExp,2)
+    figure
+    plot(wavenumbersRaman,spectraExp(:,i))
+
+    xlabel('Wavenumbers (cm^{-1})')
+    ylabel('Raman Intensity')
+    title(['Particle ',num2str(i)])
+
+    set(gca,'fontsize',12,'linewidth',1,'xdir','reverse')
+    box on
+
+    FileNamePlot = sprintf('%s%s%d.fig',Path,['Particle ',num2str(i)]);
+    FileNamePlot2 = sprintf('%s%s%d.jpg',Path,['Particle ',num2str(i)]);
+    saveas(gcf,FileNamePlot,'fig')
+    saveas(gcf,FileNamePlot2,'jpg')
+
+    close all
+end
+
+%% cleaning up
+
+% Use for 20230707 data.
+% kill = [2,3,4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,21,24,15,26,...
+%     27,28,29,31,32,33,35,36,42,48,51,52,53,64,67,70];
+
+% Use for 20230822 data.
+kill = [11,13,17,22,23,24,25,26,27,28,29,30,31,32,33,34,35,...
+    37,38,39,40,41,43,44,46,47];
+
+spectraExpTrans = transpose(spectraExp);
+
+for j = 1:length(kill)
+    for i = 1:157
+        if i == kill(j)
+            spectraExpTrans(i,1) = -9999;
+        end
+    end
+end
+
+spectraExpTrans(spectraExpTrans(:,1) == -9999,:) = [];
+
+spectraExpClean = transpose(spectraExpTrans);
+% spectraExpTrans
+% each column corresponds to a different particle
+% the rows correspond with wavenumbners in wavenumbersIR
+
+
+%% change negatives to zeros
+
+for i = 1:size(spectraExpClean,2)
+    for j = 1:size(spectraExpClean,1)
+        if spectraExpClean(j,i) < 0
+            spectraExpClean(j,i) = 0;
+        end
+    end
+end
+
+
+%% normalize spectra
+
+spectrumMax = 0;
+spectraNorm = [];
+
+for i = 1:size(spectraExpClean,2)
+    spectrumMax = max(spectraExpClean(:,i));
+    spectraNorm(:,i) = spectraExpClean(:,i)/spectrumMax;
+end
+
+%% calculate average normalized spectrum and standard error
+
+spectrumAvg = zeros(size(spectraNorm(1)));
+spectrumStdError = zeros(size(spectraNorm(1)));
+
+for i = 1:size(spectraNorm,1)
+    spectrumAvg(i,1) = mean(spectraNorm(i,:));
+    spectrumStdError(i,1) = std(spectraNorm(i,:))/sqrt(size(spectraNorm,1));
+end
+
+%% 
+
+
+save('PE_cleanup_20230707.mat','spectrumAvg','spectrumStdError')
+
